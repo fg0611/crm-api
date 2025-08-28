@@ -1,0 +1,9 @@
+# usamos python 3.10 en un entorno de anaconda
+
+# inst las dependencias
+pip install "fastapi[all]" python-jose[cryptography] passlib[bcrypt] psycopg2-binary
+
+# esto es para levantar el proyecto sin embargo es necesario que sea desde 
+# antes de la carpeta "crm-api"
+
+python -m crm-api.main
