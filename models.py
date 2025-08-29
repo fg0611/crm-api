@@ -1,9 +1,16 @@
 # models.py
-from sqlalchemy import Column, DateTime, String, Boolean, Text
+import enum
+from sqlalchemy import Column, DateTime, String, Boolean, Text, Enum
 from .database import Base
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.sql import text
 
+# Define el ENUM para los estados del lead
+class Status(enum.Enum):
+    contacted = "contacted"
+    responded = "responded"
+    completed = "completed"
+    quoted = "quoted"
 
 class User(Base):
     __tablename__ = "users"
@@ -11,7 +18,7 @@ class User(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, server_default=text("gen_random_uuid()"))
     email = Column(String, unique=True, index=True, nullable=False)
     hashed_password = Column(String, nullable=False)
-    is_active = Column(Boolean, default=True)
+    is_active = Column(Boolean, default=False)
 
 class Lead(Base):
     __tablename__ = "leads"
@@ -25,3 +32,4 @@ class Lead(Base):
     collected_data = Column(JSONB)
     previous_step = Column(String)
     name = Column(Text)
+    status = Column(Enum(Status), default=Status.contacted, nullable=True)

@@ -3,6 +3,15 @@ from datetime import datetime
 from typing import List, Optional
 from uuid import UUID
 from pydantic import BaseModel
+import enum
+
+# Define el ENUM para los estados del lead
+class Status(str, enum.Enum):
+    contacted = "contacted"
+    responded = "responded"
+    completed = "completed"
+    quoted = "quoted"
+
 
 class UserCreate(BaseModel):
     email: str
@@ -26,6 +35,7 @@ class LeadBase(BaseModel):
     collected_data: Optional[dict] = None
     previous_step: Optional[str] = None
     name: Optional[str] = None
+    status: Optional[Status] = None
 
 class LeadCreate(LeadBase):
     id: str
@@ -34,6 +44,14 @@ class Lead(LeadBase):
     id: str
     created_at: datetime
     
+    class Config:
+        from_attributes = True
+
+class LeadUpdate(BaseModel):
+    is_active: Optional[bool] = None
+    name: Optional[str] = None
+    status: Optional[Status] = None
+
     class Config:
         from_attributes = True
 
