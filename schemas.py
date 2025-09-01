@@ -14,12 +14,12 @@ class Status(str, enum.Enum):
 
 
 class UserCreate(BaseModel):
-    email: str
+    username: str
     password: str
 
 class User(BaseModel):
     id: UUID
-    email: str
+    username: str
     is_active: bool
     
     class Config:

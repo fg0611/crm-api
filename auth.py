@@ -23,7 +23,7 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
 
-def is_valid_token_and_get_email(token: str):
+def is_valid_token_and_get_username(token: str):
     """
     Decodifica el token y revisa si no ha expirado
     """
@@ -34,9 +34,9 @@ def is_valid_token_and_get_email(token: str):
     )
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        email: str = payload.get("sub")
-        if email is None:
+        username: str = payload.get("sub")
+        if username is None:
             return None
     except JWTError:
         raise credentials_exception
-    return email
+    return username

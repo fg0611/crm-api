@@ -6,4 +6,5 @@ pip install "fastapi[all]" python-jose[cryptography] passlib[bcrypt] psycopg2-bi
 # esto es para levantar el proyecto sin embargo es necesario que sea desde 
 # antes de la carpeta "crm-api"
 
+cd ..
 python -m crm-api.main

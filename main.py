@@ -1,14 +1,33 @@
+from typing import Optional
 from fastapi import FastAPI, Depends, HTTPException, status, Query
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from sqlalchemy.sql import text
 from .database import get_db
 from passlib.context import CryptContext
+from starlette.middleware.cors import CORSMiddleware
 
 from . import models, schemas, crud, auth
 from .database import get_db
 
+# Definir los orígenes permitidos
+origins = [
+    "http://localhost:5173",  # La URL de tu cliente de React
+    "http://127.0.0.1:5173",  # También se debe agregar por si acaso
+]
+
+
 app = FastAPI()
+
+# Agregar el middleware de CORS a la aplicación
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],  # Permite todos los métodos (GET, POST, etc.)
+    allow_headers=["*"],  # Permite todos los encabezados
+)
+
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 # Define el esquema de seguridad OAuth2
@@ -54,9 +73,9 @@ def register_user(
     """
     Permite hacer registro.
     """
-    db_user = crud.get_user_by_email(db, email=user.email)
+    db_user = crud.get_user_by_username(db, username=user.username)
     if db_user:
-        raise HTTPException(status_code=400, detail="Email already registered")
+        raise HTTPException(status_code=400, detail="username already registered")
     
     hashed_password = pwd_context.hash(user.password)
     new_user = crud.create_user(db=db, user=user, hashed_password=hashed_password)
@@ -78,10 +97,16 @@ def login_for_access_token(
             detail="Incorrect username or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
+    if not user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Ask for account activation",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
     
-    access_token = auth.create_access_token(data={"sub": user.email})
+    access_token = auth.create_access_token(data={"sub": user.username})
     
-    return {"access_token": access_token, "token_type": "bearer"}
+    return {"access_token": access_token, "token_type": "bearer", "user": user}
 
 # Endpoint 
 @app.get("/leads", response_model=schemas.PaginatedLeads)
@@ -89,13 +114,44 @@ def read_leads(
     db: Session = Depends(get_db),
     current_user: schemas.User = Depends(get_current_user),
     skip: int = Query(0, ge=0),
-    limit: int = Query(100, ge=1, le=100)
+    limit: int = Query(100, ge=1, le=100),
+    # Nuevos parámetros de filtrado
+    lead_id: Optional[str] = None,
+    name: Optional[str] = None,
+    is_active: Optional[bool] = None,
+    status: Optional[str] = None,
+    collected_data_key: Optional[str] = None,
+    collected_data_value: Optional[str] = None,
 ):
     """
     Obtiene una lista paginada de todos los leads.
     """
-    total_leads = crud.get_leads_count(db)
-    leads = crud.get_leads(db, skip=skip, limit=limit)
+    # total_leads = crud.get_leads_count(db)
+    # leads = crud.get_leads(db, skip=skip, limit=limit)
+    # Pasamos los parámetros de filtrado a la función get_leads
+    leads = crud.get_leads(
+        db, 
+        skip=skip, 
+        limit=limit,
+        lead_id=lead_id,
+        name=name,
+        is_active=is_active,
+        status=status,
+        collected_data_key=collected_data_key,
+        collected_data_value=collected_data_value
+    )
+
+     # También necesitamos contar el total de leads que coinciden con los filtros
+    total_leads = crud.get_filtered_leads_count(
+        db, 
+        lead_id=lead_id,
+        name=name,
+        is_active=is_active,
+        status=status,
+        collected_data_key=collected_data_key,
+        collected_data_value=collected_data_value
+    )
+
     return schemas.PaginatedLeads(total=total_leads, leads=leads)
 
 @app.get("/leads/{lead_id}", response_model=schemas.Lead)
