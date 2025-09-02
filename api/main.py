@@ -14,7 +14,10 @@ from .database import get_db
 origins = [
     "http://localhost:5173",  # La URL de tu cliente de React
     "http://127.0.0.1:5173",  # También se debe agregar por si acaso
+    "http://localhost:5173/",  # La URL de tu cliente de React
+    "http://127.0.0.1:5173/",  # También se debe agregar por si acaso
     "https://crm-client-tawny.vercel.app"
+    "https://crm-client-tawny.vercel.app/"
 ]
 
 
