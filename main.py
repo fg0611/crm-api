@@ -14,6 +14,7 @@ from .database import get_db
 origins = [
     "http://localhost:5173",  # La URL de tu cliente de React
     "http://127.0.0.1:5173",  # También se debe agregar por si acaso
+    "https://crm-client-tawny.vercel.app"
 ]
 
 
@@ -34,10 +35,10 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 # El argumento tokenUrl es la URL de tu endpoint de login
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
+
 # Función que obtendrá el usuario actual del token
 def get_current_user(
-    db: Session = Depends(get_db), 
-    token: str = Depends(oauth2_scheme)
+    db: Session = Depends(get_db), token: str = Depends(oauth2_scheme)
 ):
     user = crud.get_user_by_token(db, token)
     if not user or not user.is_active:
@@ -47,6 +48,7 @@ def get_current_user(
             headers={"WWW-Authenticate": "Bearer"},
         )
     return user
+
 
 # Endpoint para verificar la conexión a la base de datos
 @app.get("/health")
@@ -61,31 +63,29 @@ def check_db_connection(db: Session = Depends(get_db)):
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Database connection failed: {e}"
+            detail=f"Database connection failed: {e}",
         )
+
 
 # Endpoint para registrar un nuevo usuario
 @app.post("/register", response_model=schemas.User)
-def register_user(
-    user: schemas.UserCreate, 
-    db: Session = Depends(get_db)
-    ):
+def register_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
     """
     Permite hacer registro.
     """
     db_user = crud.get_user_by_username(db, username=user.username)
     if db_user:
         raise HTTPException(status_code=400, detail="username already registered")
-    
+
     hashed_password = pwd_context.hash(user.password)
     new_user = crud.create_user(db=db, user=user, hashed_password=hashed_password)
     return new_user
 
+
 # Endpoint para login
 @app.post("/token")
 def login_for_access_token(
-    form_data: OAuth2PasswordRequestForm = Depends(),
-    db: Session = Depends(get_db)
+    form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)
 ):
     """
     Permite hacer login.
@@ -103,12 +103,13 @@ def login_for_access_token(
             detail="Ask for account activation",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    
+
     access_token = auth.create_access_token(data={"sub": user.username})
-    
+
     return {"access_token": access_token, "token_type": "bearer", "user": user}
 
-# Endpoint 
+
+# Endpoint
 @app.get("/leads", response_model=schemas.PaginatedLeads)
 def read_leads(
     db: Session = Depends(get_db),
@@ -130,36 +131,39 @@ def read_leads(
     # leads = crud.get_leads(db, skip=skip, limit=limit)
     # Pasamos los parámetros de filtrado a la función get_leads
     leads = crud.get_leads(
-        db, 
-        skip=skip, 
+        db,
+        skip=skip,
         limit=limit,
         lead_id=lead_id,
         name=name,
         is_active=is_active,
         status=status,
         collected_data_key=collected_data_key,
-        collected_data_value=collected_data_value
+        collected_data_value=collected_data_value,
     )
 
-     # También necesitamos contar el total de leads que coinciden con los filtros
+    # También necesitamos contar el total de leads que coinciden con los filtros
     total_leads = crud.get_filtered_leads_count(
-        db, 
+        db,
         lead_id=lead_id,
         name=name,
         is_active=is_active,
         status=status,
         collected_data_key=collected_data_key,
-        collected_data_value=collected_data_value
+        collected_data_value=collected_data_value,
     )
 
     return schemas.PaginatedLeads(total=total_leads, leads=leads)
 
+
 @app.get("/leads/{lead_id}", response_model=schemas.Lead)
 def read_lead_by_id(
-    lead_id: str, 
+    lead_id: str,
     db: Session = Depends(get_db),
-    current_user: schemas.User = Depends(get_current_user), # dependencia para proteger el endpoint
-    ):
+    current_user: schemas.User = Depends(
+        get_current_user
+    ),  # dependencia para proteger el endpoint
+):
     """
     Obtiene un lead específico por su ID.
     """
@@ -168,12 +172,15 @@ def read_lead_by_id(
         raise HTTPException(status_code=404, detail="Lead not found")
     return lead
 
+
 @app.post("/leads/", response_model=schemas.Lead)
 def create_new_lead(
-    lead: schemas.LeadCreate, 
+    lead: schemas.LeadCreate,
     db: Session = Depends(get_db),
-    current_user: schemas.User = Depends(get_current_user) # dependencia para proteger el endpoint
-    ):
+    current_user: schemas.User = Depends(
+        get_current_user
+    ),  # dependencia para proteger el endpoint
+):
     """
     Crea un nuevo Lead en la DB
     """
@@ -185,21 +192,24 @@ def create_new_lead(
     new_lead = crud.create_lead(db, lead)
     return new_lead
 
+
 @app.put("/leads/{lead_id}", response_model=schemas.Lead)
 def update_lead_data(
     lead_id: str,
     lead_data: schemas.LeadUpdate,
     db: Session = Depends(get_db),
-    current_user : schemas.User = Depends(get_current_user)
-    ):
+    current_user: schemas.User = Depends(get_current_user),
+):
     """
     Actualiza un Lead
     """
     updated_lead = crud.update_lead(db, lead_id, lead_data)
     if not update_lead_data:
-        raise HTTPException(status_code=404, detail="Lead not found") 
+        raise HTTPException(status_code=404, detail="Lead not found")
     return updated_lead
+
 
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run("crm-api.main:app", host="0.0.0.0", port=8000, reload=True)
