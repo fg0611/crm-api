@@ -1,16 +1,11 @@
 # models.py
 import enum
 from sqlalchemy import Column, DateTime, String, Boolean, Text, Enum
+
+from api.types import Status
 from .database import Base
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.sql import text
-
-# Define el ENUM para los estados del lead
-class Status(enum.Enum):
-    contacted = "contacted"
-    responded = "responded"
-    completed = "completed"
-    quoted = "quoted"
 
 class User(Base):
     __tablename__ = "users"
@@ -32,4 +27,4 @@ class Lead(Base):
     collected_data = Column(JSONB)
     previous_step = Column(String)
     name = Column(Text)
-    status = Column(Enum(Status), default=Status.contacted, nullable=True)
+    status = Column(Enum(Status, create_type=False), default=Status.contacted, nullable=True)

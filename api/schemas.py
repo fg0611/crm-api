@@ -5,12 +5,7 @@ from uuid import UUID
 from pydantic import BaseModel
 import enum
 
-# Define el ENUM para los estados del lead
-class Status(str, enum.Enum):
-    contacted = "contacted"
-    responded = "responded"
-    completed = "completed"
-    quoted = "quoted"
+from api.types import Status
 
 
 class UserCreate(BaseModel):
