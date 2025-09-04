@@ -1,4 +1,3 @@
-
 # Define el ENUM para los estados del lead
 import enum
 

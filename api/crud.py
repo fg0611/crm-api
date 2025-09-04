@@ -118,7 +118,7 @@ def get_leads(
     
     # Aplicar filtros si existen
     if lead_id:
-        query = query.filter(models.Lead.id.like(f"%{lead_id}%"))
+        query = query.filter(models.Lead.id.like(f"%{lead_id}"))
     if name:
         query = query.filter(func.lower(models.Lead.name).like(f"%{name.lower()}%"))
     if is_active is not None:
