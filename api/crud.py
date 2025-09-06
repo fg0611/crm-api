@@ -12,13 +12,15 @@ from .auth import is_valid_token_and_get_username
 # Instancia para el hashing de contraseñas
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
+
 def get_user_by_username(db: Session, username: str):
     """
     Obtiene un usuario por su dirección de correo electrónico.
     """
     return db.query(models.User).filter(models.User.username == username).first()
 
-def get_user_by_token(db:Session, token: str):
+
+def get_user_by_token(db: Session, token: str):
     """
     Valida un token y devuelve un usuario si éste existe
     """
@@ -30,18 +32,17 @@ def get_user_by_token(db:Session, token: str):
         return None
     return user
 
+
 def create_user(db: Session, user: schemas.UserCreate, hashed_password: str):
     """
     Crea un nuevo usuario en la base de datos.
     """
-    db_user = models.User(
-        username=user.username,
-        hashed_password=hashed_password
-    )
+    db_user = models.User(username=user.username, hashed_password=hashed_password)
     db.add(db_user)
     db.commit()
     db.refresh(db_user)
     return db_user
+
 
 def authenticate_user(db: Session, username: str, password: str):
     """
@@ -54,11 +55,13 @@ def authenticate_user(db: Session, username: str, password: str):
         return False
     return user
 
+
 def get_leads(db: Session, skip: int = 0, limit: int = 100):
     """
     Obtiene una lista de leads con paginación de desplazamiento.
     """
     return db.query(models.Lead).offset(skip).limit(limit).all()
+
 
 def get_lead_by_id(db: Session, lead_id: str):
     """
@@ -66,11 +69,13 @@ def get_lead_by_id(db: Session, lead_id: str):
     """
     return db.query(models.Lead).filter(models.Lead.id == lead_id).first()
 
+
 def get_leads_count(db: Session):
     """
     Obtiene el número total de leads en la base de datos.
     """
     return db.query(models.Lead).count()
+
 
 def create_lead(db: Session, lead: schemas.LeadCreate):
     """
@@ -82,6 +87,7 @@ def create_lead(db: Session, lead: schemas.LeadCreate):
     db.refresh(db_lead)
     return db_lead
 
+
 def update_lead(db: Session, lead_id: str, lead_data: schemas.LeadUpdate):
     """
     Edita un Lead
@@ -91,7 +97,7 @@ def update_lead(db: Session, lead_id: str, lead_data: schemas.LeadUpdate):
         return None
     # Usamos model_dump(exclude_unset=True) para obtener solo los campos que se enviaron en la petición
     update_data = lead_data.model_dump(exclude_unset=True)
-    for key, value in update_data.items(): # editamos con el lead original 
+    for key, value in update_data.items():  # editamos con el lead original
         setattr(db_lead, key, value)
     # ejecutamos el update
     db.add(db_lead)
@@ -99,10 +105,11 @@ def update_lead(db: Session, lead_id: str, lead_data: schemas.LeadUpdate):
     db.refresh(db_lead)
     return db_lead
 
+
 # Función para obtener los leads con filtros
 def get_leads(
-    db: Session, 
-    skip: int = 0, 
+    db: Session,
+    skip: int = 0,
     limit: int = 100,
     lead_id: Optional[str] = None,
     name: Optional[str] = None,
@@ -110,12 +117,13 @@ def get_leads(
     status: Optional[str] = None,
     collected_data_key: Optional[str] = None,
     collected_data_value: Optional[str] = None,
+    order_by_created_at: Optional[str] = None,
 ):
     """
     Obtiene una lista de leads con paginación y filtros.
     """
     query = db.query(models.Lead)
-    
+
     # Aplicar filtros si existen
     if lead_id:
         query = query.filter(models.Lead.id.like(f"%{lead_id}"))
@@ -125,10 +133,18 @@ def get_leads(
         query = query.filter(models.Lead.is_active == is_active)
     if status:
         query = query.filter(models.Lead.status == status)
-    
+
     # Filtro para collected_data (asumiendo que es un campo de tipo JSONB)
     if collected_data_key and collected_data_value:
-        query = query.filter(models.Lead.collected_data[collected_data_key].astext == collected_data_value)
+        query = query.filter(
+            models.Lead.collected_data[collected_data_key].astext
+            == collected_data_value
+        )
+
+    if order_by_created_at == 'asc':
+        query = query.order_by(models.Lead.created_at.asc())
+    else:
+        query = query.order_by(models.Lead.created_at.desc())
 
     return query.offset(skip).limit(limit).all()
 
@@ -147,7 +163,7 @@ def get_filtered_leads_count(
     Obtiene el número total de leads que coinciden con los filtros.
     """
     query = db.query(models.Lead)
-    
+
     if lead_id:
         query = query.filter(models.Lead.id == lead_id)
     if name:
@@ -156,8 +172,11 @@ def get_filtered_leads_count(
         query = query.filter(models.Lead.is_active == is_active)
     if status:
         query = query.filter(models.Lead.status == status)
-    
+
     if collected_data_key and collected_data_value:
-        query = query.filter(models.Lead.collected_data[collected_data_key].astext == collected_data_value)
-    
+        query = query.filter(
+            models.Lead.collected_data[collected_data_key].astext
+            == collected_data_value
+        )
+
     return query.count()

@@ -126,6 +126,7 @@ def read_leads(
     status: Optional[str] = None,
     collected_data_key: Optional[str] = None,
     collected_data_value: Optional[str] = None,
+    order_by_created_at: Optional[str] = None,
 ):
     """
     Obtiene una lista paginada de todos los leads.
@@ -133,6 +134,7 @@ def read_leads(
     # total_leads = crud.get_leads_count(db)
     # leads = crud.get_leads(db, skip=skip, limit=limit)
     # Pasamos los parámetros de filtrado a la función get_leads
+
     leads = crud.get_leads(
         db,
         skip=skip,
@@ -143,6 +145,7 @@ def read_leads(
         status=status,
         collected_data_key=collected_data_key,
         collected_data_value=collected_data_value,
+        order_by_created_at=order_by_created_at
     )
 
     # También necesitamos contar el total de leads que coinciden con los filtros
